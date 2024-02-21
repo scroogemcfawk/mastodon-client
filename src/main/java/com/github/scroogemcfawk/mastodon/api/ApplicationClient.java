@@ -19,7 +19,7 @@ public class ApplicationClient
     private File storage;
 
     private void initClientDir() {
-        storage = new File("src/main/resources/.storage");
+        storage = new File(".storage");
         if (!storage.exists()) {
             System.out.println("created dir");
             storage.mkdirs();
@@ -28,7 +28,7 @@ public class ApplicationClient
     }
 
     public void loadApp() {
-        try (BufferedReader br = new BufferedReader(new FileReader("src/main/resources/.storage/secret.txt"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(".storage/secret.txt"))) {
             try {
                 app = new Gson().fromJson(br.readLine(), Application.class);
             } catch (Exception e) {
@@ -68,7 +68,7 @@ public class ApplicationClient
             loadApp();
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Could not load app from file.");
             return false;
         }
     }
