@@ -1,4 +1,4 @@
-package com.github.scroogemcfawk.mastodon.util
+package com.github.scroogemcfawk.util
 
 interface IDebuggable {
 

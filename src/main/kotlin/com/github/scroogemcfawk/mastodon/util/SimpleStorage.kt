@@ -1,5 +1,6 @@
 package com.github.scroogemcfawk.mastodon.util
 
+import com.github.scroogemcfawk.util.IDebuggable
 import com.google.gson.Gson
 import social.bigbone.api.entity.Application
 import social.bigbone.api.entity.Token

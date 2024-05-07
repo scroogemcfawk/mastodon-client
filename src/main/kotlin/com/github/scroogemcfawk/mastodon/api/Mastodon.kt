@@ -1,6 +1,6 @@
 package com.github.scroogemcfawk.mastodon.api
 
-import com.github.scroogemcfawk.mastodon.util.IDebuggable
+import com.github.scroogemcfawk.util.IDebuggable
 import com.github.scroogemcfawk.mastodon.util.IStorage
 import com.github.scroogemcfawk.mastodon.util.SimpleStorage
 import social.bigbone.MastodonClient
