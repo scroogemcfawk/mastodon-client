@@ -1,6 +1,8 @@
-package com.github.scroogemcfawk.mastodon.api.entity
+package com.github.scroogemcfawk.mastodon.api
 
-import com.github.scroogemcfawk.mastodon.api.IMastodon
+import com.github.scroogemcfawk.mastodon.util.IDebuggable
+import com.github.scroogemcfawk.mastodon.util.IStorage
+import com.github.scroogemcfawk.mastodon.util.SimpleStorage
 import social.bigbone.MastodonClient
 import social.bigbone.api.Pageable
 import social.bigbone.api.Scope
@@ -8,11 +10,12 @@ import social.bigbone.api.entity.Application
 import social.bigbone.api.entity.Status
 import social.bigbone.api.entity.Token
 import social.bigbone.api.exception.BigBoneRequestException
+import java.io.File
 
 class Mastodon(
     val hostname: String,
-    val debug: Boolean = false
-) : IMastodon {
+    override val debug: Boolean = false
+) : IMastodon, IDebuggable {
 
     // generic parameters
     companion object {
@@ -32,13 +35,11 @@ class Mastodon(
     private var login: String? = null
     private var userSeenTheRules: Boolean = false
 
+    private val storage: IStorage = SimpleStorage(File(".mastodon.json"), debug)
+
     init {
         initClient()
         initApplication()
-    }
-
-    private fun deb(message: String) {
-        if (debug) println(message)
     }
 
     private fun initClient() {
@@ -54,24 +55,46 @@ class Mastodon(
 
     private fun getRequestToken(): Token {
         requestToken = client.oauth.getAccessTokenWithClientCredentialsGrant(application.clientId!!, application.clientSecret!!, localRedirectUri, fullScope).execute()
+        storage.saveRequestToken(application.clientId!!, requestToken!!)
         return requestToken!!
     }
 
 
     private fun initApplication() {
         // todo add secret storage
-        deb("Initializing application: name=${clientName}, redirect=${localRedirectUri}, scope=${fullScope}")
+        deb("Initializing application: name=$clientName, redirect=$localRedirectUri, scope=$fullScope")
         try {
-            application = client.apps.createApp(
-                clientName,
-                localRedirectUri,
-                null,
-                fullScope
-            ).execute()
+            if (tryInitApplicationFromStorage() == null) {
+                application = client.apps.createApp(
+                    clientName,
+                    localRedirectUri,
+                    null,
+                    fullScope
+                ).execute()
+                storage.saveApplication(hostname, application)
+            }
         } catch (e: BigBoneRequestException) {
             System.err.println("Application initialization failed. Status code: ${e.httpStatusCode}")
         }
         deb("Initialized application: id=${application.clientId}, secret=${application.clientSecret}")
+    }
+
+    private fun tryInitApplicationFromStorage(): Application? {
+        storage.getApplication(hostname)?.let {
+            application = it
+            deb("Initialized application from storage.")
+            return it
+        }
+        return null
+    }
+
+    private fun tryInitClientFromStorage(clientId: String, username: String): Token? {
+        storage.getAccessToken(clientId, username)?.let {
+            accessToken = it
+            deb("Initialized access token from storage.")
+            return it
+        }
+        return null
     }
 
     override fun getRules(): String {
@@ -96,6 +119,7 @@ class Mastodon(
                 "en-US",
                 null
             ).execute()
+            storage.saveAccessToken(application.clientId!!, username, localAccessToken)
             deb("User has been registered.")
             if (autologin) {
                 deb("Auto-login user.")
@@ -111,14 +135,17 @@ class Mastodon(
             throw IllegalStateException("Application is not initialized.")
         }
         try {
-            accessToken = client.oauth.getUserAccessTokenWithPasswordGrant(
-                application.clientId!!,
-                application.clientSecret!!,
-                localRedirectUri,
-                username,
-                password,
-                fullScope
-            ).execute()
+            if (tryInitClientFromStorage(application.clientId!!, username) == null) {
+                accessToken = client.oauth.getUserAccessTokenWithPasswordGrant(
+                    application.clientId!!,
+                    application.clientSecret!!,
+                    localRedirectUri,
+                    username,
+                    password,
+                    fullScope
+                ).execute()
+                storage.saveAccessToken(application.clientId!!, username, accessToken!!)
+            }
             login = username
             // reinit client with user's access token
             authorizeClient(accessToken)

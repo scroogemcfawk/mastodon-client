@@ -1,14 +1,6 @@
 package com.github.scroogemcfawk.mastodon.api;
 
-import com.github.scroogemcfawk.mastodon.api.entity.Mastodon;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Locale;
-import java.util.Scanner;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ApplicationClientTest
 {

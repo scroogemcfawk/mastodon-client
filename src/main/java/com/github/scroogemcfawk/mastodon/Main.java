@@ -1,6 +1,6 @@
-package com.github.scroogemcfawk.mastodon.api;
+package com.github.scroogemcfawk.mastodon;
 
-import com.github.scroogemcfawk.mastodon.api.entity.Mastodon;
+import com.github.scroogemcfawk.mastodon.api.Mastodon;
 
 import java.io.IOException;
 
