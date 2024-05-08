@@ -6,6 +6,7 @@ import com.github.scroogemcfawk.mastodon.util.SimpleStorage
 import social.bigbone.MastodonClient
 import social.bigbone.api.Pageable
 import social.bigbone.api.Scope
+import social.bigbone.api.entity.Account
 import social.bigbone.api.entity.Application
 import social.bigbone.api.entity.Status
 import social.bigbone.api.entity.Token
@@ -19,9 +20,9 @@ class Mastodon(
 
     // generic parameters
     companion object {
-        private val localRedirectUri = "urn:ietf:wg:oauth:2.0:oob"
-        private val fullScope = Scope(Scope.READ.ALL, Scope.WRITE.ALL, Scope.PUSH.ALL)
-        private val clientName = "LUWRAIN Mastodon Client"
+        private const val NO_REDIRECT = "urn:ietf:wg:oauth:2.0:oob"
+        private val FULL_SCOPE = Scope(Scope.READ.ALL, Scope.WRITE.ALL, Scope.PUSH.ALL)
+        private const val CLIENT_NAME = "LUWRAIN Mastodon Client"
     }
 
     private lateinit var client: MastodonClient
@@ -54,7 +55,7 @@ class Mastodon(
     }
 
     private fun getRequestToken(): Token {
-        requestToken = client.oauth.getAccessTokenWithClientCredentialsGrant(application.clientId!!, application.clientSecret!!, localRedirectUri, fullScope).execute()
+        requestToken = client.oauth.getAccessTokenWithClientCredentialsGrant(application.clientId!!, application.clientSecret!!, NO_REDIRECT, FULL_SCOPE).execute()
         storage.saveRequestToken(application.clientId!!, requestToken!!)
         return requestToken!!
     }
@@ -62,14 +63,14 @@ class Mastodon(
 
     private fun initApplication() {
         // todo add secret storage
-        deb("Initializing application: name=$clientName, redirect=$localRedirectUri, scope=$fullScope")
+        deb("Initializing application: name=$CLIENT_NAME, redirect=$NO_REDIRECT, scope=$FULL_SCOPE")
         try {
             if (tryInitApplicationFromStorage() == null) {
                 application = client.apps.createApp(
-                    clientName,
-                    localRedirectUri,
+                    CLIENT_NAME,
+                    NO_REDIRECT,
                     null,
-                    fullScope
+                    FULL_SCOPE
                 ).execute()
                 storage.saveApplication(hostname, application)
             }
@@ -139,10 +140,10 @@ class Mastodon(
                 accessToken = client.oauth.getUserAccessTokenWithPasswordGrant(
                     application.clientId!!,
                     application.clientSecret!!,
-                    localRedirectUri,
+                    NO_REDIRECT,
                     username,
                     password,
-                    fullScope
+                    FULL_SCOPE
                 ).execute()
                 storage.saveAccessToken(application.clientId!!, username, accessToken!!)
             }
@@ -168,6 +169,14 @@ class Mastodon(
 
     override fun getPublicTimeline(): Pageable<Status> {
         return client.timelines.getPublicTimeline().execute()
+    }
+
+    override fun getUserProfile(username: String): List<Account> {
+        val users = ArrayList<Account>()
+        users.addAll(
+            client.accounts.searchAccounts(query = username, limit = 10).execute()
+        )
+        return users
     }
 
     fun verifyAppCred(): Application {
