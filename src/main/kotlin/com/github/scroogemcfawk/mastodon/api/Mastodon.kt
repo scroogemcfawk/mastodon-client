@@ -60,6 +60,12 @@ class Mastodon(
         return requestToken!!
     }
 
+    fun verifyAppCred(): Application {
+        if (requestToken == null) {
+            throw IllegalStateException("Application is not authorized.")
+        }
+        return client.apps.verifyCredentials().execute()
+    }
 
     private fun initApplication() {
         // todo add secret storage
@@ -112,7 +118,7 @@ class Mastodon(
             authorizeClient()
         }
         try {
-            val localAccessToken = client.accounts.registerAccount(
+            accessToken = client.accounts.registerAccount(
                 username,
                 email,
                 password,
@@ -120,11 +126,11 @@ class Mastodon(
                 "en-US",
                 null
             ).execute()
-            storage.saveAccessToken(application.clientId!!, username, localAccessToken)
+            storage.saveAccessToken(application.clientId!!, username, accessToken!!)
             deb("User has been registered.")
             if (autologin) {
-                deb("Auto-login user.")
-                authorizeClient(localAccessToken)
+                deb("Auto-login.")
+                login(username, password)
             }
         } catch (e: BigBoneRequestException) {
             System.err.println("User register failed. Status code: ${e.httpStatusCode}")
@@ -148,6 +154,7 @@ class Mastodon(
                 storage.saveAccessToken(application.clientId!!, username, accessToken!!)
             }
             login = username
+            deb("Logged in as: $login")
             // reinit client with user's access token
             authorizeClient(accessToken)
         } catch (e: BigBoneRequestException) {
@@ -171,7 +178,7 @@ class Mastodon(
         return client.timelines.getPublicTimeline().execute()
     }
 
-    override fun getUserProfile(username: String): List<Account> {
+    override fun searchUser(username: String): List<Account> {
         val users = ArrayList<Account>()
         users.addAll(
             client.accounts.searchAccounts(query = username, limit = 10).execute()
@@ -179,10 +186,11 @@ class Mastodon(
         return users
     }
 
-    fun verifyAppCred(): Application {
-        if (requestToken == null) {
-            throw IllegalStateException("Application is not authorized.")
-        }
-        return client.apps.verifyCredentials().execute()
+    override fun getMe(): Account {
+        return client.accounts.verifyCredentials().execute()
+    }
+
+    override fun postStatus(text: String) {
+        client.statuses.postStatus(text).execute()
     }
 }

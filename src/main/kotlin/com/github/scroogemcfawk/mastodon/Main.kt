@@ -5,12 +5,16 @@ import com.github.scroogemcfawk.mastodon.api.Mastodon
 fun main(args: Array<String>) {
     try {
         val mastodon = Mastodon("techhub.social", true)
-//        mastodon.verifyAppCred()
-        // TODO login here
-        val timeline = mastodon.getPublicTimeline()
-        for (status in timeline.part) {
-            println("${status.url} ${status.content}")
-        }
+
+        val user = System.getenv("USER_1")!!
+        val password = System.getenv("PASSWD")!!
+
+        mastodon.login(user, password)
+
+        println(mastodon.getMe())
+
+        mastodon.postStatus("Test status")
+
     } catch (e: Exception) {
         e.printStackTrace()
     }
