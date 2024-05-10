@@ -8,7 +8,8 @@ import java.io.File
 
 class SimpleStorage(
     val file: File,
-    override val debug: Boolean
+    override val debug: Boolean = false,
+    override val timer: Boolean = true
 ) : IStorage, IDebuggable {
 
     lateinit var storageObject: StorageObject

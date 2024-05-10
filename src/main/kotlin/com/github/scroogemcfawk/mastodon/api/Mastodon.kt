@@ -13,10 +13,13 @@ import social.bigbone.api.entity.Status
 import social.bigbone.api.entity.Token
 import social.bigbone.api.exception.BigBoneRequestException
 import java.io.File
+import java.time.Duration
+import java.time.Instant
 
 class Mastodon(
     val hostname: String,
-    override val debug: Boolean = false
+    override val debug: Boolean = false,
+    override val timer: Boolean = true
 ) : IMastodon, IDebuggable {
 
     // generic parameters
@@ -40,8 +43,10 @@ class Mastodon(
     private val storage: IStorage = SimpleStorage(File(".mastodon.json"), debug)
 
     init {
+        deb("Initializing Mastodon")
         initClient()
         initApplication()
+        deb("Initialized Mastodon")
     }
 
     private fun initClient() {
@@ -64,6 +69,13 @@ class Mastodon(
     private fun ensureLogin() {
         if (login == null) {
             throw IllegalStateException("User is not logged in.")
+        }
+    }
+
+    private fun checkStatusText(text: String) {
+        when {
+            text.isEmpty() -> throw IllegalArgumentException("Text is too short. (0 / 1000)")
+            text.length > 1000 -> throw IllegalArgumentException("Text is too long. (${text.length} / 1000)")
         }
     }
 
@@ -192,6 +204,14 @@ class Mastodon(
         return users
     }
 
+    override fun getUserByUsername(username: String, hostname: String?): Account? {
+        ensureLogin()
+        val query = "${username.replace("@", "")}@${hostname?.replace("@", "") ?: this.hostname}"
+        val result = client.accounts.searchAccounts(query = query, limit = 20).executeOrDescribe()
+        return if (result.isEmpty()) null else result[0]
+    }
+
+
     override fun getMe(): Account {
         ensureLogin()
         return client.accounts.verifyCredentials().executeOrDescribe()
@@ -199,7 +219,17 @@ class Mastodon(
 
     override fun postStatus(text: String) {
         ensureLogin()
+        checkStatusText(text)
         client.statuses.postStatus(text).executeOrDescribe()
+    }
+
+    override fun scheduleStatusAfterDelay(text: String, delayPattern: String) {
+        ensureLogin()
+        checkStatusText(text)
+        val now = Instant.now()
+        val scheduled = now.plusSeconds(Duration.parse(delayPattern).seconds)
+        deb("Status is scheduled at: $scheduled")
+        client.statuses.scheduleStatus(text, scheduledAt = scheduled).executeOrDescribe()
     }
 }
 
