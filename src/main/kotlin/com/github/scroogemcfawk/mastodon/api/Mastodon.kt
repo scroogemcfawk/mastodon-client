@@ -4,6 +4,7 @@ import com.github.scroogemcfawk.util.IDebuggable
 import com.github.scroogemcfawk.mastodon.util.IStorage
 import com.github.scroogemcfawk.mastodon.util.SimpleStorage
 import social.bigbone.MastodonClient
+import social.bigbone.MastodonRequest
 import social.bigbone.api.Pageable
 import social.bigbone.api.Scope
 import social.bigbone.api.entity.Account
@@ -55,16 +56,22 @@ class Mastodon(
     }
 
     private fun getRequestToken(): Token {
-        requestToken = client.oauth.getAccessTokenWithClientCredentialsGrant(application.clientId!!, application.clientSecret!!, NO_REDIRECT, FULL_SCOPE).execute()
+        requestToken = client.oauth.getAccessTokenWithClientCredentialsGrant(application.clientId!!, application.clientSecret!!, NO_REDIRECT, FULL_SCOPE).executeOrDescribe()
         storage.saveRequestToken(application.clientId!!, requestToken!!)
         return requestToken!!
+    }
+
+    private fun ensureLogin() {
+        if (login == null) {
+            throw IllegalStateException("User is not logged in.")
+        }
     }
 
     fun verifyAppCred(): Application {
         if (requestToken == null) {
             throw IllegalStateException("Application is not authorized.")
         }
-        return client.apps.verifyCredentials().execute()
+        return client.apps.verifyCredentials().executeOrDescribe()
     }
 
     private fun initApplication() {
@@ -77,7 +84,7 @@ class Mastodon(
                     NO_REDIRECT,
                     null,
                     FULL_SCOPE
-                ).execute()
+                ).executeOrDescribe()
                 storage.saveApplication(hostname, application)
             }
         } catch (e: BigBoneRequestException) {
@@ -106,7 +113,7 @@ class Mastodon(
 
     override fun getRules(): String {
         userSeenTheRules = true
-        return client.instances.getRules().execute().joinToString("\n")
+        return client.instances.getRules().executeOrDescribe().joinToString("\n")
     }
 
     override fun register(username: String, email: String, password: String, agreement: Boolean, locale: String, autologin: Boolean, reason: String?) {
@@ -125,7 +132,7 @@ class Mastodon(
                 agreement,
                 "en-US",
                 null
-            ).execute()
+            ).executeOrDescribe()
             storage.saveAccessToken(application.clientId!!, username, accessToken!!)
             deb("User has been registered.")
             if (autologin) {
@@ -150,7 +157,7 @@ class Mastodon(
                     username,
                     password,
                     FULL_SCOPE
-                ).execute()
+                ).executeOrDescribe()
                 storage.saveAccessToken(application.clientId!!, username, accessToken!!)
             }
             login = username
@@ -168,29 +175,39 @@ class Mastodon(
     }
 
     override fun getHomeTimeline(): Pageable<Status> {
-        if (login == null) {
-            throw IllegalStateException("User is not logged in.")
-        }
-        return client.timelines.getHomeTimeline().execute()
+        ensureLogin()
+        return client.timelines.getHomeTimeline().executeOrDescribe()
     }
 
     override fun getPublicTimeline(): Pageable<Status> {
-        return client.timelines.getPublicTimeline().execute()
+        return client.timelines.getPublicTimeline().executeOrDescribe()
     }
 
-    override fun searchUser(username: String): List<Account> {
+    override fun searchUser(query: String): List<Account> {
+        ensureLogin()
         val users = ArrayList<Account>()
         users.addAll(
-            client.accounts.searchAccounts(query = username, limit = 10).execute()
+            client.accounts.searchAccounts(query = query, limit = 5).executeOrDescribe()
         )
         return users
     }
 
     override fun getMe(): Account {
-        return client.accounts.verifyCredentials().execute()
+        ensureLogin()
+        return client.accounts.verifyCredentials().executeOrDescribe()
     }
 
     override fun postStatus(text: String) {
-        client.statuses.postStatus(text).execute()
+        ensureLogin()
+        client.statuses.postStatus(text).executeOrDescribe()
+    }
+}
+
+private inline fun <reified T> MastodonRequest<T>.executeOrDescribe(): T {
+    try {
+        return this.execute()
+    } catch (e: BigBoneRequestException) {
+        System.err.println(this.javaClass.simpleName + "<${T::class.java.simpleName}>" + " failed: " + e.httpStatusCode)
+        throw e
     }
 }

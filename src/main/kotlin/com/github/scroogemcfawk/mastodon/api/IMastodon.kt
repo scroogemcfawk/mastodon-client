@@ -11,7 +11,7 @@ interface IMastodon {
     fun logout()
     fun getHomeTimeline(): Pageable<Status>
     fun getPublicTimeline(): Pageable<Status>
-    fun searchUser(username: String): List<Account>
+    fun searchUser(query: String): List<Account>
     fun getMe(): Account
     fun postStatus(text: String)
 }
