@@ -114,7 +114,8 @@ class Mastodon(
         return null
     }
 
-    private fun tryInitClientFromStorage(clientId: String, username: String): Token? {
+    private fun tryInitClientFromStorage(clientId: String, username: String, password: String): Token? {
+        if (!storage.isValidPasswordHash(clientId, username, password.hashCode())) return null
         storage.getAccessToken(clientId, username)?.let {
             accessToken = it
             deb("Initialized access token from storage.")
@@ -161,7 +162,7 @@ class Mastodon(
             throw IllegalStateException("Application is not initialized.")
         }
         try {
-            if (tryInitClientFromStorage(application.clientId!!, username) == null) {
+            if (tryInitClientFromStorage(application.clientId!!, username, password) == null) {
                 accessToken = client.oauth.getUserAccessTokenWithPasswordGrant(
                     application.clientId!!,
                     application.clientSecret!!,

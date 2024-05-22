@@ -10,4 +10,6 @@ interface IStorage {
     fun saveRequestToken(clientId: String, token: Token)
     fun getAccessToken(clientId: String, username: String): Token?
     fun saveAccessToken(clientId: String, username: String, token: Token)
+    fun isValidPasswordHash(clientId: String, username: String, hash: Int): Boolean
+    fun savePasswordHash(clientId: String, username: String, hash: Int)
 }

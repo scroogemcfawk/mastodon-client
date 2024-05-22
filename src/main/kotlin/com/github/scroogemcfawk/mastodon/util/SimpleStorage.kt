@@ -68,4 +68,19 @@ class SimpleStorage(
         }[username] = token
         saveToFile()
     }
+
+    override fun isValidPasswordHash(clientId: String, username: String, hash: Int): Boolean {
+        storageObject.passwordHashes[clientId]?.let { client ->
+            client[username]?.let { passwordHash ->
+                return passwordHash == hash
+            } ?: return false
+        } ?: return false
+    }
+
+    override fun savePasswordHash(clientId: String, username: String, hash: Int) {
+        storageObject.passwordHashes.getOrPut(clientId) {
+            HashMap()
+        }[username] = hash
+        saveToFile()
+    }
 }
