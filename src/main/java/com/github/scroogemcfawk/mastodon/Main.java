@@ -10,7 +10,7 @@ public class Main
     public static void main(String[] args) throws IOException
     {
         try {
-            Mastodon mastodon = new Mastodon("techhub.social", false);
+            Mastodon mastodon = new Mastodon("techhub.social", false, false);
             mastodon.verifyAppCred();
 //            mastodon.getHomeTimeline();
         } catch (Exception e) {

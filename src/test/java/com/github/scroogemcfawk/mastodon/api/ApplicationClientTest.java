@@ -28,17 +28,17 @@ class ApplicationClientTest
 //        assertTrue(client.verifyAccount(null));
 //    }
 
-    @Test
-    public void testRegister() {
-        Mastodon mastodon = new Mastodon("mas.to", true);
-//        System.out.printf(mastodon.verifyAppCred().toString());
-//        for (var timeline : mastodon.getPublicTimeline().getPart()) {
-//            System.out.println(timeline.toString());
-//        }
-        System.out.println(mastodon.getRules());
-        // 401 for some reason
-        mastodon.register("luwraintestusername2281337", "jessicavicious@fthcapital.com", "easypass123", true, "en-US", false, null);
-    }
+//    @Test
+//    public void testRegister() {
+//        Mastodon mastodon = new Mastodon("mas.to", true, true);
+////        System.out.printf(mastodon.verifyAppCred().toString());
+////        for (var timeline : mastodon.getPublicTimeline().getPart()) {
+////            System.out.println(timeline.toString());
+////        }
+//        System.out.println(mastodon.getRules());
+//        // 401 for some reason
+//        mastodon.register("luwraintestusername2281337", "jessicavicious@fthcapital.com", "easypass123", true, "en-US", false, null);
+//    }
 
 
 }

@@ -212,7 +212,6 @@ class Mastodon(
         return if (result.isEmpty()) null else result[0]
     }
 
-
     override fun getMe(): Account {
         ensureLogin()
         return client.accounts.verifyCredentials().executeOrDescribe()
